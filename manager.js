@@ -5,6 +5,7 @@ const bot = new TelegramBot(token, { polling: true });
 
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
+  const messageId = msg.message_id; // Added to use in reply_to_message_id
   const text = msg.text.toLowerCase();
 
   // Respond to 'shop' keyword
@@ -35,35 +36,35 @@ bot.on('message', (msg) => {
 
   // BIN check command - expecting messages like "/bin 414720"
   if (text.startsWith("/bin ")) {
-  const bin = text.split(" ")[1]; // get the BIN number from the command
-  if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
-    const url = `https://api.freebinchecker.com/bin/${bin}`;
+    const bin = text.split(" ")[1]; // get the BIN number from the command
+    if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
+      const url = `https://api.freebinchecker.com/bin/${bin}`;
 
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (data.valid) {
-          // Extracting the necessary data from the response
-          const scheme = data.card.scheme;
-          const type = data.card.type;
-          const category = data.card.category;
-          const issuerName = data.issuer.name;
-          const countryName = data.country.name;
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data.valid) {
+            // Extracting the necessary data from the response
+            const scheme = data.card.scheme;
+            const type = data.card.type;
+            const category = data.card.category;
+            const issuerName = data.issuer.name;
+            const countryName = data.country.name;
 
-          // Format the reply message with the extracted data
-          const reply = `Scheme: ${scheme}\nType: ${type}\nCategory: ${category}\nIssuer: ${issuerName}\nCountry: ${countryName}`;
-          bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
-        } else {
-          bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
-        }
-      })
-      .catch(error => {
-        bot.sendMessage(chatId, "Failed to retrieve BIN information due to a network error or bad response. Please try again.", { reply_to_message_id: messageId });
-      });
-  } else {
-    bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
+            // Format the reply message with the extracted data
+            const reply = `Scheme: ${scheme}\nType: ${type}\nCategory: ${category}\nIssuer: ${issuerName}\nCountry: ${countryName}`;
+            bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
+          } else {
+            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
+          }
+        })
+        .catch(error => {
+          bot.sendMessage(chatId, "Failed to retrieve BIN information.", { reply_to_message_id: messageId });
+        });
+    } else {
+      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
+    }
   }
-}
-
+});
 
 console.log('Bot has started.');
