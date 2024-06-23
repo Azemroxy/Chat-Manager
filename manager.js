@@ -35,12 +35,17 @@ bot.on('message', (msg) => {
   }
 
 if (text.startsWith("/bin ")) {
-    const bin = text.split(" ")[1]; // get the BIN number from the command
+    const bin = text.split(" ")[1]; // Get the BIN number from the command
     if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
       const url = `https://api.freebinchecker.com/bin/${bin}`;
 
       fetch(url)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP status ${response.status}`); // Throws an error with the status code
+          }
+          return response.json();
+        })
         .then(data => {
           if (data.valid) {
             // Extracting the necessary data from the response
@@ -52,21 +57,20 @@ if (text.startsWith("/bin ")) {
 
             // Format the reply message with the extracted data
             const reply = `Scheme: ${scheme}\nType: ${type}\nCategory: ${category}\nIssuer: ${issuerName}\nCountry: ${countryName}`;
-            bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
+            bot.sendMessage(chatId, reply, { reply_to_message_id: msg.message_id });
           } else {
-            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
+            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: msg.message_id });
           }
         })
         .catch(error => {
-          bot.sendMessage(chatId, "Failed to retrieve BIN information.", { reply_to_message_id: messageId });
+          console.error('Error:', error);
+          bot.sendMessage(chatId, "Failed to retrieve BIN information due to a network error or API issue.", { reply_to_message_id: msg.message_id });
         });
     } else {
-      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
+      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: msg.message_id });
     }
   }
 });
-
-console.log('Bot has started.');
 
 
 console.log('Bot has started.');
