@@ -33,18 +33,22 @@ bot.on('message', (msg) => {
   if (text.includes("help") || text.includes("faq")) {
     bot.sendMessage(chatId, "Check out our FAQ Section on our Shop!");
   }
-
 if (text.startsWith("/bin ")) {
-    const bin = text.split(" ")[1]; // Get the BIN number from the command
+    const bin = text.split(" ")[1]; // Extract the BIN number from the command
     if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
       const url = `https://api.freebinchecker.com/bin/${bin}`;
 
       fetch(url)
         .then(response => {
+          // Check if the response is OK and that the content type is JSON
+          const contentType = response.headers.get("content-type");
           if (!response.ok) {
-            throw new Error(`HTTP status ${response.status}`); // Throws an error with the status code
+            throw new Error('Network response was not OK');
           }
-          return response.json();
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Expected JSON response, received something else.');
+          }
+          return response.json(); // Parse JSON only after validating the response type
         })
         .then(data => {
           if (data.valid) {
@@ -63,8 +67,8 @@ if (text.startsWith("/bin ")) {
           }
         })
         .catch(error => {
-          console.error('Error:', error);
-          bot.sendMessage(chatId, "Failed to retrieve BIN information due to a network error or API issue.", { reply_to_message_id: msg.message_id });
+          // Send a user-friendly error message
+          bot.sendMessage(chatId, "Failed to retrieve BIN information.", { reply_to_message_id: msg.message_id });
         });
     } else {
       bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: msg.message_id });
