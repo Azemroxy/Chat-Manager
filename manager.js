@@ -3,6 +3,18 @@ const fetch = require('node-fetch');
 const token = '6676236322:AAG1t77ijj_4qiEyUsYa49e7l7XB7WJCBng';
 const bot = new TelegramBot(token, { polling: true });
 
+// List of API keys
+const apiKeys = ['dfaba6f6495cebf74b36b1b2f372883c61af2887 ', 'dfaba6f6495cebf74b36b1b2f372883c61af2887 ', 'API_KEY_3']; // Add your keys here
+let currentKeyIndex = 0;
+
+function getApiKey() {
+  return apiKeys[currentKeyIndex % apiKeys.length];
+}
+
+function incrementApiKey() {
+  currentKeyIndex++;
+}
+
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const messageId = msg.message_id; // Added to use in reply_to_message_id
@@ -36,48 +48,42 @@ bot.on('message', (msg) => {
 
   // BIN check command - expecting messages like "/bin 414720"
   if (text.startsWith("/bin ")) {
-    const bin = text.split(" ")[1]; // Extract the BIN number from the command
-    if (bin.length === 6 && /^\d+$/.test(bin)) { // Validate if BIN is a 6-digit number
-      const url = `https://api.freebinchecker.com/bin/${bin}`;
+  const bin = text.split(" ")[1];
+  if (bin.length === 6 && /^\d+$/.test(bin)) {
+    const apiKey = getApiKey();
+    const url = `https://api.bintable.com/v1/${bin}?api_key=${apiKey}`;
 
-      fetch(url)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`Network response was not OK: ${response.status}`);
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 401) {
+            incrementApiKey();
+            throw new Error('API key limit reached, switching to next key');
           }
-          return response.text()
-            .then(text => {
-              try {
-                return JSON.parse(text);
-              } catch (e) {
-                throw new Error('Failed to parse JSON: ' + e.message);
-              }
-            });
-        })
-        .then(data => {
-          if (data.valid) {
-            // Extracting the necessary data from the response
-            const scheme = data.card.scheme;
-            const type = data.card.type;
-            const category = data.card.category;
-            const issuerName = data.issuer.name;
-            const countryName = data.country.name;
+          throw new Error(`Network response was not OK: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.result === 200 && data.message === "SUCCESS") {
+          const card = data.data.card;
+          const country = data.data.country;
+          const bank = data.data.bank;
 
-            // Format the reply message with the extracted data
-            const reply = `Scheme: ${scheme}\nType: ${type}\nCategory: ${category}\nIssuer: ${issuerName}\nCountry: ${countryName}`;
-            bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
-          } else {
-            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
-          }
-        })
-        .catch(error => {
-          console.error('Fetch Error:', error.message);
-          bot.sendMessage(chatId, "Failed to retrieve BIN information due to a network error or API issue.", { reply_to_message_id: messageId });
-        });
-    } else {
-      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
-    }
+          const reply = `Card Scheme: ${card.scheme}\nType: ${card.type}\nCategory: ${card.category}\nBank: ${bank.name}\nCountry: ${country.name} ${country.flag}\nCurrency: ${country.currency} (${country.currency_code})\nWebsite: ${bank.website}\nPhone: ${bank.phone}`;
+          bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
+        } else {
+          bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error.message);
+        bot.sendMessage(chatId, error.message, { reply_to_message_id: messageId });
+      });
+  } else {
+    bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
   }
+}
 });
 
 
