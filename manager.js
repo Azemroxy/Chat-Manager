@@ -34,8 +34,7 @@ bot.on('message', (msg) => {
     bot.sendMessage(chatId, "Check out our FAQ Section on our Shop!");
   }
 
-  // BIN check command - expecting messages like "/bin 414720"
-  if (text.startsWith("/bin ")) {
+if (text.startsWith("/bin ")) {
     const bin = text.split(" ")[1]; // get the BIN number from the command
     if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
       const url = `https://api.freebinchecker.com/bin/${bin}`;
@@ -66,5 +65,8 @@ bot.on('message', (msg) => {
     }
   }
 });
+
+console.log('Bot has started.');
+
 
 console.log('Bot has started.');
