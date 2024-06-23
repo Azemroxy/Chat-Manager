@@ -70,7 +70,7 @@ bot.on('message', (msg) => {
           const country = data.data.country;
           const bank = data.data.bank;
 
-          const reply = `Card Scheme: ${card.scheme}\nType: ${card.type}\nCategory: ${card.category}\nBank: ${bank.name}\nCountry: ${country.name} ${country.flag}\nCurrency: ${country.currency} (${country.currency_code})\nWebsite: ${bank.website}\nPhone: ${bank.phone}`;
+          const reply = `Card Scheme: ${card.scheme}\nType: ${card.type}\nCategory: ${card.category}\nBank: ${bank.name}\nCountry: ${country.name} ${country.flag}`;
           bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
         } else {
           bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
