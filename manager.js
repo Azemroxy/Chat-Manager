@@ -33,22 +33,26 @@ bot.on('message', (msg) => {
   if (text.includes("help") || text.includes("faq")) {
     bot.sendMessage(chatId, "Check out our FAQ Section on our Shop!");
   }
-if (text.startsWith("/bin ")) {
+
+  // BIN check command - expecting messages like "/bin 414720"
+  if (text.startsWith("/bin ")) {
     const bin = text.split(" ")[1]; // Extract the BIN number from the command
-    if (bin.length === 6 && /^\d+$/.test(bin)) { // Check if BIN is a 6-digit number
+    if (bin.length === 6 && /^\d+$/.test(bin)) { // Validate if BIN is a 6-digit number
       const url = `https://api.freebinchecker.com/bin/${bin}`;
 
       fetch(url)
         .then(response => {
-          // Check if the response is OK and that the content type is JSON
-          const contentType = response.headers.get("content-type");
           if (!response.ok) {
-            throw new Error('Network response was not OK');
+            throw new Error(`Network response was not OK: ${response.status}`);
           }
-          if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Expected JSON response, received something else.');
-          }
-          return response.json(); // Parse JSON only after validating the response type
+          return response.text()
+            .then(text => {
+              try {
+                return JSON.parse(text);
+              } catch (e) {
+                throw new Error('Failed to parse JSON: ' + e.message);
+              }
+            });
         })
         .then(data => {
           if (data.valid) {
@@ -61,17 +65,17 @@ if (text.startsWith("/bin ")) {
 
             // Format the reply message with the extracted data
             const reply = `Scheme: ${scheme}\nType: ${type}\nCategory: ${category}\nIssuer: ${issuerName}\nCountry: ${countryName}`;
-            bot.sendMessage(chatId, reply, { reply_to_message_id: msg.message_id });
+            bot.sendMessage(chatId, reply, { reply_to_message_id: messageId });
           } else {
-            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: msg.message_id });
+            bot.sendMessage(chatId, "No valid data available for the provided BIN.", { reply_to_message_id: messageId });
           }
         })
         .catch(error => {
-          // Send a user-friendly error message
-          bot.sendMessage(chatId, "Failed to retrieve BIN information.", { reply_to_message_id: msg.message_id });
+          console.error('Fetch Error:', error.message);
+          bot.sendMessage(chatId, "Failed to retrieve BIN information due to a network error or API issue.", { reply_to_message_id: messageId });
         });
     } else {
-      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: msg.message_id });
+      bot.sendMessage(chatId, "Please enter a valid 6-digit BIN number.", { reply_to_message_id: messageId });
     }
   }
 });
